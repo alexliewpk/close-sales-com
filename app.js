@@ -7,7 +7,27 @@ const SUPABASE_URL = 'https://xukgdrnqkwuxsmaqwvta.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_i_QWouaGp43S5jsC0_3UXA_1TyXSMly';
 const SUPABASE_TABLE = 'trip_itineraries';
 const SUPABASE_ROW_ID = 'sales-expense-2026';
-const supabaseClient = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY) || null;
+// Lightweight REST client: works in every modern browser without a framework.
+const supabaseClient = {
+  from(table){
+    const endpoint = `${SUPABASE_URL}/rest/v1/${table}`;
+    const headers = {apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json'};
+    const request = async (url, options={}) => {
+      try {
+        const response = await fetch(url,{...options,headers:{...headers,...options.headers}});
+        const body = await response.json().catch(()=>null);
+        return {data:response.ok ? body : null,error:response.ok ? null : (body || {message:`Cloud request failed (${response.status})`})};
+      } catch (error) { return {data:null,error}; }
+    };
+    return {
+      upsert: row => request(endpoint,{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(row)}),
+      select: columns => ({eq:(column,value)=>({maybeSingle:async()=>{
+        const result = await request(`${endpoint}?select=${encodeURIComponent(columns)}&${encodeURIComponent(column)}=eq.${encodeURIComponent(value)}`);
+        return {data:Array.isArray(result.data) ? (result.data[0] || null) : result.data,error:result.error};
+      }})})
+    };
+  }
+};
 const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const money = n => new Intl.NumberFormat('en-MY',{style:'currency',currency:'MYR',minimumFractionDigits:0,maximumFractionDigits:2}).format(n||0).replace('MYR','RM');
 const dateVal = d => new Date(d+'T12:00:00');
@@ -127,7 +147,9 @@ function renderExpenses(){const rows=state.expenses.sort((a,b)=>b.date.localeCom
 function renderReports(){const m=+$('#report-month').value,y=+$('#report-year').value,c=$('#report-client').value,t=$('#report-type').value;const sales=state.sales.filter(s=>sameMonth(s.date,m,y)&&(!c||s.client===c)&&(!t||s.type===t));const saleIds=new Set(sales.map(s=>s.id));const cash=state.payments.filter(p=>sameMonth(p.date,m,y)&&(!c||saleById(p.saleId)?.client===c)&&(!t||saleById(p.saleId)?.type===t));const exp=state.expenses.filter(e=>sameMonth(e.date,m,y));$('#report-sales').textContent=money(sales.reduce((a,s)=>a+totalFor(s),0));$('#report-cash').textContent=money(cash.reduce((a,p)=>a+p.amount,0));$('#report-expenses').textContent=money(exp.reduce((a,e)=>a+e.amount,0));$('#report-period').textContent=`${months[m]} ${y}`;$('#report-sales-list').innerHTML=sales.length?sales.map(s=>`<div class="report-row"><div><strong>${esc(s.client)}</strong><span> · ${esc(s.product)}</span><small> ${s.type==='recurring'?`(${money(s.monthly)} × ${s.months} months)`:'Lump sum'}</small></div><strong>${money(totalFor(s))}</strong></div>`).join(''):'No sales for this period.';}
 function populatePaymentSales(){const el=$('#payment-sale');const old=el.value;el.innerHTML='<option value="" disabled selected>Choose a sale…</option>'+state.sales.filter(s=>totalFor(s)>paymentsFor(s)).map(s=>`<option value="${s.id}">${esc(s.client)} — ${esc(s.product)} (${money(totalFor(s)-paymentsFor(s))} due)</option>`).join('');el.value=old;}
 function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
-window.removeItem=removeItem;init();syncFromSupabase();
+window.removeItem=removeItem;
+try { init(); } catch (error) { console.warn('A legacy dashboard widget was skipped.', error); }
+syncFromSupabase();
 
 // Client names are reusable: choose a saved client, or add a new one from the same field.
 const clientInput = $('#sale-form [name="client"]');
