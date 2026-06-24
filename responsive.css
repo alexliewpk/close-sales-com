@@ -80,3 +80,16 @@
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}
 }
+
+/* Mobile uses a compact bottom navigation, retaining the desktop glass language. */
+@media (max-width:759px){
+  .mobile-menu-toggle,.mobile-menu-scrim{display:none!important}
+  .sidebar{inset:auto 0 0 0!important;transform:none!important;width:100%!important;height:78px!important;padding:7px 10px calc(7px + env(safe-area-inset-bottom))!important;display:block!important;border-radius:22px 22px 0 0!important;background:linear-gradient(180deg,rgba(39,118,183,.86),rgba(31,78,157,.92))!important;box-shadow:0 -12px 32px rgba(19,48,104,.22)!important}
+  .brand,.sidebar-foot{display:none!important}
+  .sidebar nav{height:100%!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:4px!important}
+  .nav-item,.nav-item.active,.nav-item:hover{min-height:0!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;padding:6px 4px!important;border-radius:15px!important;background:transparent!important;color:rgba(255,255,255,.80)!important;font-size:11px!important;font-weight:650!important;text-align:center!important}
+  .nav-item span{font-size:21px!important;line-height:21px!important}
+  .nav-item.active{background:linear-gradient(145deg,rgba(255,255,255,.30),rgba(173,213,255,.24))!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 7px 16px rgba(10,38,93,.20)!important}
+  .nav-item[data-view="collections"]{display:none!important}
+  main{padding-bottom:calc(98px + env(safe-area-inset-bottom))!important}
+}
