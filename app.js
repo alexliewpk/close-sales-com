@@ -76,7 +76,9 @@ async function syncFromSupabase(){
   if(error){ setCloudStatus('Cloud sync needs setup'); return; }
   const remoteHasRecords = Boolean(data?.data) && ((data.data.sales?.length||0) + (data.data.payments?.length||0) + (data.data.expenses?.length||0) > 0);
   const localHasRecords = (state.sales?.length||0) + (state.payments?.length||0) + (state.expenses?.length||0) > 0;
-  if(remoteHasRecords){ state=data.data; let salaryUpdated=normalizeSySalary(); if(backfillSySalary2026())salaryUpdated=true; localStorage.setItem(STORAGE,JSON.stringify(state)); if(salaryUpdated)queueCloudSave(); setCloudStatus(salaryUpdated?'Salary records updated':'Loaded from Supabase'); try { renderAll(); } catch (renderError) { console.warn('Dashboard refresh skipped.', renderError); } }
+  // On the first sync, protect a browser that already has recorded sales.
+  const localHasMoreSales = (state.sales?.length||0) > (data?.data?.sales?.length||0);
+  if(remoteHasRecords && !localHasMoreSales){ state=data.data; let salaryUpdated=normalizeSySalary(); if(backfillSySalary2026())salaryUpdated=true; localStorage.setItem(STORAGE,JSON.stringify(state)); if(salaryUpdated)queueCloudSave(); setCloudStatus(salaryUpdated?'Salary records updated':'Loaded from Supabase'); try { renderAll(); } catch (renderError) { console.warn('Dashboard refresh skipped.', renderError); } }
   else if(localHasRecords){ queueCloudSave(); setCloudStatus('Saving local data to Supabase…'); }
   else { setCloudStatus('Cloud sync ready'); }
 }
