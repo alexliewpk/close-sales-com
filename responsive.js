@@ -21,7 +21,12 @@
 
   // This is appended after the dashboard's runtime styling so phone cards
   // always remain a clean vertical stack instead of a horizontal carousel.
-  const mobileLayout = document.createElement('style');
-  mobileLayout.textContent = '@media (max-width:759px){.metric-grid{display:grid!important;grid-template-columns:1fr!important;overflow:visible!important;margin:0 0 18px!important;padding:0!important;gap:12px!important}.metric-card{width:100%!important;min-width:0!important;flex:none!important}.dashboard-bottom{display:grid!important;grid-template-columns:1fr!important}}';
-  document.head.appendChild(mobileLayout);
+  const applyMobileLayout = () => {
+    document.getElementById('mobile-card-stack')?.remove();
+    const mobileLayout = document.createElement('style');
+    mobileLayout.id = 'mobile-card-stack';
+    mobileLayout.textContent = '@media (max-width:759px){.metric-grid{display:grid!important;grid-template-columns:1fr!important;overflow:visible!important;margin:0 0 18px!important;padding:0!important;gap:12px!important}.metric-card{width:100%!important;min-width:0!important;flex:none!important}.dashboard-bottom{display:grid!important;grid-template-columns:1fr!important}}';
+    document.head.appendChild(mobileLayout);
+  };
+  setTimeout(applyMobileLayout, 450);
 })();
