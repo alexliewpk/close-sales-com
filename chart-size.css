@@ -1,0 +1,9 @@
+/* Let the chart use the available report-card height on desktop. */
+@media (min-width: 760px) {
+  .monthly-sales-panel { padding-bottom: 18px !important; }
+  .monthly-sales-chart svg {
+    height: clamp(290px, 34vh, 350px) !important;
+    width: 100% !important;
+  }
+  .chart-guide { margin-top: 2px !important; }
+}

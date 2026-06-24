@@ -1,0 +1,20 @@
+/* Sales filters stay in one clear row on desktop, and stack only on mobile. */
+@media (min-width: 760px) {
+  .filters#sales-filters {
+    display: grid !important;
+    grid-template-columns: .85fr .85fr 1.35fr 1fr !important;
+    align-items: center;
+    gap: 10px !important;
+    padding: 10px !important;
+  }
+
+  .filters#sales-filters select {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+@media (max-width: 759px) {
+  .filters#sales-filters { display: grid !important; grid-template-columns: 1fr !important; }
+}
