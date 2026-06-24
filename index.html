@@ -83,7 +83,7 @@
 
     <dialog id="expense-modal" class="modal"><form id="expense-form"><div class="modal-head"><div><p class="eyebrow">NEW EXPENSE</p><h2>Add an expense</h2></div><button type="button" class="close-modal">×</button></div><div class="form-grid"><label>Expense date<input required type="date" name="date" /></label><label>Category<select name="category"><option>Marketing</option><option>Advertising</option><option>Software</option><option>Salary</option><option>Travel</option><option>Miscellaneous</option></select></label><label class="full-width">Description<input required name="description" placeholder="What was this for?" /></label><label>Amount (RM)<input required type="number" min="0.01" step="0.01" name="amount" placeholder="0.00" /></label></div><label>Notes<textarea name="notes" rows="3" placeholder="Optional details…"></textarea></label><div class="modal-actions"><button type="button" class="secondary-btn close-modal">Cancel</button><button class="primary-btn">Save expense</button></div></form></dialog>
     <div id="toast" class="toast"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="app.js?v=backfill-sy-salary-2026"></script>
     <script src="dashboard-ui.js?v=compact-dashboard-overview"></script>
   </body>
