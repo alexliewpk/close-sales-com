@@ -1,6 +1,14 @@
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const STORAGE = 'ledgerly-v1';
+['metric-mrr','mrr-list','activity-list'].forEach(id => {
+  if (!document.getElementById(id)) {
+    const fallback = document.createElement('div');
+    fallback.id = id;
+    fallback.hidden = true;
+    document.body.appendChild(fallback);
+  }
+});
 const now = new Date();
 let state = JSON.parse(localStorage.getItem(STORAGE) || '{"sales":[],"payments":[],"expenses":[]}');
 const SUPABASE_URL = 'https://xukgdrnqkwuxsmaqwvta.supabase.co';
