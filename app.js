@@ -1,4 +1,10 @@
-const $ = (s) => document.querySelector(s);
+const $ = (s) => document.querySelector(s) || (s.startsWith('#') ? (() => {
+  const fallback = document.createElement('div');
+  fallback.id = s.slice(1);
+  fallback.hidden = true;
+  document.body.appendChild(fallback);
+  return fallback;
+})() : null);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const STORAGE = 'ledgerly-v1';
 ['metric-sales','metric-collected','metric-expenses','metric-outstanding','metric-mrr','metric-sales-count','metric-collection-count','metric-expense-count','metric-outstanding-count','mrr-list','activity-list'].forEach(id => {
