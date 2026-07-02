@@ -611,3 +611,197 @@ renderAll();
 const appleOverrideStyle = document.createElement('style');
 appleOverrideStyle.textContent = '.collection-card,.balance-card,.mrr-card{display:flex!important}.yearly-card,.average-card{display:none!important}.sales-card,.expense-card{display:flex!important}.monthly-sales-panel,.dashboard-bottom{display:none!important}.nav-item[data-view="collections"]{display:flex!important}';
 document.head.appendChild(appleOverrideStyle);
+
+
+// Export a sale as a print-ready invoice in the attached Wave-style format.
+function invoiceMoney(amount){
+  return `RM${Number(amount || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+function invoiceLongDate(date){
+  return dateVal(date).toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+function invoiceHtmlEscape(value){
+  return String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+}
+function invoiceLineDescription(sale){
+  if (sale.notes) return invoiceHtmlEscape(sale.notes).replace(/\n/g, '<br>');
+  if (sale.type === 'recurring') return `${invoiceHtmlEscape(sale.product)}<br>Monthly service package${sale.months ? ` - ${sale.months} month${sale.months === 1 ? '' : 's'}` : ''}`;
+  return invoiceHtmlEscape(sale.product);
+}
+function exportInvoice(saleId){
+  const sale = saleById(saleId);
+  if (!sale) return toast('Invoice not found.');
+  const subtotal = sale.type === 'recurring' ? (sale.monthly || 0) * (sale.months || 1) : (sale.total || 0);
+  const sst = sale.sst ? subtotal * 0.08 : 0;
+  const total = subtotal + sst;
+  const invoiceNumber = sale.invoiceNumber || 'Invoice';
+  const quantity = sale.type === 'recurring' ? (sale.months || 1) : 1;
+  const monthly = sale.type === 'recurring' ? invoiceMoney(sale.monthly || subtotal) : '-';
+  const invoiceWindow = window.open('', '_blank');
+  if (!invoiceWindow) return toast('Please allow pop-ups to export the invoice.');
+  invoiceWindow.document.write(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Invoice ${invoiceHtmlEscape(invoiceNumber)}</title>
+  <style>
+    @page { size: Letter; margin: 0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #e9e9e9; color: #111; font-family: Arial, Helvetica, sans-serif; }
+    .invoice-page { width: 8.5in; min-height: 11in; margin: 0 auto; padding: .56in .38in .34in; background: #fff; position: relative; page-break-after: always; }
+    .invoice-page:last-child { page-break-after: auto; }
+    .top { display: grid; grid-template-columns: 1fr 1fr; align-items: start; min-height: 2.1in; }
+    .logo { padding-top: .28in; }
+    .brand { font-size: 33px; font-weight: 900; letter-spacing: -1px; color: #454545; line-height: 1; }
+    .brand span { color: #c99435; }
+    .tagline { margin-top: 10px; margin-left: 10px; color: #777; font-size: 11px; letter-spacing: 7px; }
+    .seller { text-align: right; font-size: 15px; line-height: 1.25; }
+    .seller h1 { margin: 0 0 .28in; font-size: 42px; font-weight: 400; letter-spacing: 1px; }
+    .seller strong { display: block; margin-bottom: 4px; }
+    .divider { height: 2px; background: #d8d8d8; margin: 0 -.38in .14in; }
+    .meta { display: grid; grid-template-columns: 1fr .95fr; gap: .3in; margin-bottom: .14in; }
+    .bill-title { color: #9aa1a6; font-size: 14px; letter-spacing: 1px; margin-bottom: 6px; }
+    .bill strong { display: block; font-size: 15px; margin-bottom: 5px; }
+    .invoice-facts { font-size: 15px; }
+    .fact { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; align-items: center; }
+    .fact b { text-align: right; }
+    .fact.amount { background: #f0f0f0; padding: 8px 10px; font-weight: 700; }
+    table { width: calc(100% + .76in); margin-left: -.38in; border-collapse: collapse; table-layout: fixed; }
+    thead th { background: #9c9991; color: #fff; text-align: left; font-size: 15px; padding: 13px .38in; }
+    thead th:nth-child(2), thead th:nth-child(3), thead th:nth-child(4) { text-align: right; }
+    tbody td { vertical-align: top; padding: 16px .38in 12px; font-size: 15px; line-height: 1.25; }
+    tbody td:nth-child(2), tbody td:nth-child(3), tbody td:nth-child(4) { text-align: right; white-space: nowrap; }
+    .item-title { font-weight: 700; }
+    .item-desc { margin-top: 6px; }
+    .section-line { height: 2px; background: #e0e0e0; margin: 0 -.38in .22in; }
+    .totals { width: 3.4in; margin-left: auto; font-size: 15px; }
+    .total-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; padding: 9px 0; align-items: center; }
+    .total-row b { text-align: right; }
+    .total-row span { text-align: right; }
+    .total-line { border-top: 2px solid #dcdcdc; margin: 7px 0; }
+    .amount-due { font-weight: 800; }
+    .terms { position: absolute; left: .38in; right: .38in; bottom: .62in; color: #515960; font-size: 14px; line-height: 1.32; }
+    .terms h3 { margin: 0 0 10px; color: #4f565d; font-size: 15px; }
+    .terms p { margin: 0 0 10px; }
+    .footer { position: absolute; left: 0; right: 0; bottom: .16in; text-align: center; color: #8a8a8a; font-size: 13px; }
+    .wave { color: #0f2e7e; font-weight: 800; font-size: 20px; margin-bottom: 4px; }
+    @media print {
+      body { background: #fff; }
+      .invoice-page { margin: 0; box-shadow: none; }
+      .print-help { display: none; }
+    }
+    @media screen {
+      .print-help { width: 8.5in; margin: 14px auto; display: flex; justify-content: flex-end; gap: 10px; font-family: Arial, Helvetica, sans-serif; }
+      .print-help button { border: 0; border-radius: 10px; padding: 10px 14px; font-weight: 700; cursor: pointer; }
+      .print-help button:first-child { background: #111; color: #fff; }
+      .invoice-page { box-shadow: 0 12px 40px rgba(0,0,0,.12); }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-help"><button onclick="window.print()">Save / Print PDF</button><button onclick="window.close()">Close</button></div>
+  <section class="invoice-page">
+    <div class="top">
+      <div class="logo">
+        <div class="brand">BRAND<span>MARK</span></div>
+        <div class="tagline">Go Big, Go Remarkable</div>
+      </div>
+      <div class="seller">
+        <h1>INVOICE</h1>
+        <strong>Brandmark Sdn Bhd</strong>
+        Menara Mutiara Sentral<br>
+        2, Jalan Desa Aman 1, Cheras Business Centre<br>
+        KL, Kuala Lumpur 56100<br>
+        Malaysia
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="meta">
+      <div class="bill">
+        <div class="bill-title">BILL TO</div>
+        <strong>${invoiceHtmlEscape(sale.client)}</strong>
+      </div>
+      <div class="invoice-facts">
+        <div class="fact"><b>Invoice Number:</b><span>${invoiceHtmlEscape(invoiceNumber)}</span></div>
+        <div class="fact"><b>Invoice Date:</b><span>${invoiceLongDate(sale.date)}</span></div>
+        <div class="fact"><b>Payment Due:</b><span>${invoiceLongDate(sale.date)}</span></div>
+        <div class="fact amount"><b>Amount Due (MYR):</b><span>${invoiceMoney(total)}</span></div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Items</th><th>Quantity</th><th>Monthly</th><th>Amount</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><div class="item-title">${invoiceHtmlEscape(sale.product)}</div><div class="item-desc">${invoiceLineDescription(sale)}</div></td>
+          <td>${quantity}</td>
+          <td>${monthly}</td>
+          <td>${invoiceMoney(subtotal)}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="section-line"></div>
+    <div class="totals">
+      <div class="total-row"><b>Subtotal:</b><span>${invoiceMoney(subtotal)}</span></div>
+      ${sale.sst ? `<div class="total-row"><b>SST 8%:</b><span>${invoiceMoney(sst)}</span></div>` : ''}
+      <div class="total-line"></div>
+      <div class="total-row"><b>Total:</b><span>${invoiceMoney(total)}</span></div>
+      <div class="total-line"></div>
+      <div class="total-row amount-due"><b>Amount Due (MYR):</b><span>${invoiceMoney(total)}</span></div>
+    </div>
+    <div class="terms">
+      <h3>Notes / Terms</h3>
+      <p>Terms & Conditions</p>
+      <p>1. By accepting this invoice, the client accepts the service package and payment amount stated above.</p>
+      <p>2. Brandmark Sdn Bhd will provide consultation, coaching, or services according to the agreed scope.</p>
+      <p>3. Fees are non-refundable once the agreement is executed unless otherwise stated in writing.</p>
+    </div>
+    <div class="footer">Page 1 of 2 for Invoice #${invoiceHtmlEscape(invoiceNumber)}</div>
+  </section>
+  <section class="invoice-page">
+    <div class="top">
+      <div class="logo">
+        <div class="brand">BRAND<span>MARK</span></div>
+        <div class="tagline">Go Big, Go Remarkable</div>
+      </div>
+      <div class="seller">
+        <h1>INVOICE</h1>
+        <strong>Brandmark Sdn Bhd</strong>
+        Menara Mutiara Sentral<br>
+        2, Jalan Desa Aman 1, Cheras Business Centre<br>
+        KL, Kuala Lumpur 56100<br>
+        Malaysia
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-size:15px;line-height:1.35;color:#515960;margin-top:.3in">
+      <p>4. Business results may vary and depend on client execution, market conditions, and other external factors.</p>
+      <p>5. The client is responsible for providing accurate information, attending scheduled sessions, and implementing agreed actions.</p>
+      <p>6. By accepting this service, the client authorizes Brandmark Sdn Bhd to use testimonials, reviews, and related feedback where applicable.</p>
+    </div>
+    <div class="footer"><div class="wave">Powered by wave</div>Page 2 of 2 for Invoice #${invoiceHtmlEscape(invoiceNumber)}</div>
+  </section>
+  <script>
+    window.addEventListener('load', () => setTimeout(() => window.print(), 350));
+  </script>
+</body>
+</html>`);
+  invoiceWindow.document.close();
+}
+window.exportInvoice = exportInvoice;
+
+const invoiceExportStyle = document.createElement('style');
+invoiceExportStyle.textContent = '.export-invoice-btn{border:0;border-radius:6px;padding:6px 9px;font-size:11px;font-weight:700;cursor:pointer;margin-right:6px;background:#e8f2ff;color:#126fc5}.export-invoice-btn:hover{background:#dcebff}@media(max-width:759px){.export-invoice-btn,.duplicate-sale-btn{min-height:34px;padding:8px 10px}}';
+document.head.appendChild(invoiceExportStyle);
+
+const renderSalesWithInvoiceExport = renderSales;
+renderSales = function(){
+  renderSalesWithInvoiceExport();
+  $$('#sales-table tr').forEach(row => {
+    const invoiceCell = row.querySelector('td:first-child strong');
+    const sale = state.sales.find(item => (item.invoiceNumber || '—') === invoiceCell?.textContent);
+    const actions = row.querySelector('td:last-child');
+    if (!sale || !actions || actions.querySelector('.export-invoice-btn')) return;
+    actions.insertAdjacentHTML('afterbegin', `<button class="export-invoice-btn" title="Export invoice" onclick="event.stopPropagation();exportInvoice('${sale.id}')">Export</button>`);
+  });
+};
+renderSales();
