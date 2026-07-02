@@ -1,6 +1,14 @@
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const STORAGE = 'ledgerly-v1';
+['metric-sales','metric-collected','metric-expenses','metric-outstanding','metric-mrr','metric-sales-count','metric-collection-count','metric-expense-count','metric-outstanding-count','mrr-list','activity-list'].forEach(id => {
+  if (!document.getElementById(id)) {
+    const fallback = document.createElement('div');
+    fallback.id = id;
+    fallback.hidden = true;
+    document.body.appendChild(fallback);
+  }
+});
 ['metric-mrr','mrr-list','activity-list'].forEach(id => {
   if (!document.getElementById(id)) {
     const fallback = document.createElement('div');
