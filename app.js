@@ -8,7 +8,7 @@ const $ = (s) => document.querySelector(s) || (s.startsWith('#') ? (() => {
   document.body.appendChild(wrapper);
   return fallback;
 })() : null);
-const $$ = (s) => [...document.querySelectorAll(s)];const $$ = (s) => [...document.querySelectorAll(s)];
+const $$ = (s) => [...document.querySelectorAll(s)];
 const STORAGE = 'ledgerly-v1';
 ['metric-sales','metric-collected','metric-expenses','metric-outstanding','metric-mrr','metric-sales-count','metric-collection-count','metric-expense-count','metric-outstanding-count','mrr-list','activity-list'].forEach(id => {
   if (!document.getElementById(id)) {
